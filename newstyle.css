@@ -291,6 +291,28 @@ footer {
     display: none;
 }
 
+.wall-img {
+    width: 100%;
+}
+
+.split {
+    display: flex;
+    flex-direction: row;
+    gap: 4rem;
+}
+
+.split-l {
+    flex: 1;
+}
+
+.split-r {
+    flex: 1;
+}
+
+.section-grey {
+    background-color: #f1f1f1;
+}
+
 @media screen and (max-width: 800px) {
 
     #semi-circle {
@@ -465,6 +487,14 @@ footer {
 
     .job-card-button {
         font-size: 1rem;
+    }
+
+    .split {
+        flex-direction: column;
+    }
+
+    .media-center {
+        text-align: center;
     }
 
 }

@@ -72,6 +72,8 @@ button {
     font-size: 1.2rem;
     margin-top: 2rem;
     -webkit-appearance: none !important;
+    background-color: white;
+    color: black;
 }
 
 #semi-circle {

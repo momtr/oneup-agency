@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Job Application Form</title>
+    <style type="text/css">
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f3f3f3;
+      }
+
+      .form {
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 5px;
+      }
+
+      .form-field {
+        margin-bottom: 10px;
+      }
+
+      .form-label {
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #555555;
+      }
+
+      .form-input {
+        border: 1px solid #999999;
+        border-radius: 3px;
+        padding: 10px;
+        width: 100%;
+      }
+
+      .form-submit {
+        background-color: #0070c9;
+        border-radius: 3px;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 14px;
+        padding: 10px;
+        width: 100%;
+        margin-top: 10px;
+        border: none;
+      }
+
+      .form-submit:hover {
+        background-color: #0054a6;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form">
+      <h2>Job Application Form</h2>
+      <form action="http://oneup-web.com/api/jobs/applications" method="post" enctype="multipart/form-data">
+        <div class="form-field">
+          <label class="form-label" for="name">Name</label>
+          <input class="form-input" type="text" id="name" name="name" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="email">Email</label>
+          <input class="form-input" type="text" id="email" name="email" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="resume">Resume</label>
+          <input class="form-input" type="file" id="resume" name="resume" />
+        </div>
+        <input class="form-submit" type="submit" value="Submit" />
+      </form>
+    </div>
+  </body>
+</html>
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+
+// Connect to DB
+mongoose.connect('mongodb://localhost/oneup-web', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// Init app
+const app = express();
+
+// Set Storage Engine
+const storage = multer.diskStorage({
+  destination: './public/uploads/',
+  filename: function(req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+// Init upload
+const upload = multer({
+  storage: storage,
+  limits: {fileSize: 1000000},
+  fileFilter: function(req, file, cb) {
+    checkFileType(file, cb);
+  }
+}).single('resume');
+
+// Check file type
+function checkFileType(file, cb) {
+  // Allowed extension
+  const filetypes = /doc|docx|pdf/;
+  // Check ext
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  // Check mime
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb('Error: Please upload a valid file type! (DOC, DOCX, PDF)');
+  }
+}
+
+// Set view engine
+app.set('view engine', 'ejs');
+
+// Body Parser Middleware
+app.use(express.urlencoded({ extended: false }));
+
+// Set static folder
+app.use(express.static('./public'));
+
+// Job Application Schema
+const JobApplicationSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  resume: {
+    type: String,
+    required: true
+  }
+});
+
+// Compile schema into a model
+const JobApplication = mongoose.model('JobApplication', JobApplicationSchema);
+
+// Home Route
+app.get('/', (req, res) => {
+  res.render('index');
+});
+
+// POST Route
+app.post('/api/jobs/applications', (req, res) => {
+  upload(req, res, (err) => {
+    if(err) {
+      res.send(err);
+    } else {
+      // Validate data
+      if (req.body.name === "" || req.body.email === "" || req.file === undefined) {
+        res.send('Please fill out all fields!');
+      } else {
+        // Create Job Application
+        let jobApplication = new JobApplication({
+          name: req.body.name,
+          email: req.body.email,
+          resume: req.file.filename
+        });
+
+        // Save application
+        jobApplication.save()
+          .then(() => {
+            res.send('Application submitted successfully!');
+          })
+          .catch(err => {
+            console.log(err);
+            res.send('An error occured while submitting your application.');
+          });
+      }
+    }
+  });
+});
+
+const port = 3000;
+
+app.listen(port, () => console.log(`Server started on port ${port}`));
